@@ -61,8 +61,9 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
     
     /**
      * The velocity at which a fling gesture will cause us to snap to the next screen
+     * dustin --- cut snap velocity in half for easier fling envoking...
      */
-    private static final int SNAP_VELOCITY = 600;
+    private static final int SNAP_VELOCITY = 200;
 
     private final WallpaperManager mWallpaperManager;
     
@@ -131,7 +132,8 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
     private static final float FLING_VELOCITY_INFLUENCE = 0.4f;
     
     private static class WorkspaceOvershootInterpolator implements Interpolator {
-        private static final float DEFAULT_TENSION = 1.3f;
+	// dustin adjust tension down from 1.3f        
+	private static final float DEFAULT_TENSION = 0.3f;
         private float mTension;
 
         public WorkspaceOvershootInterpolator() {
@@ -299,8 +301,9 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
         if (!mScroller.isFinished()) mScroller.abortAnimation();
         clearVacantCache();
         mCurrentScreen = Math.max(0, Math.min(currentScreen, getChildCount() - 1));
-        mPreviousIndicator.setLevel(mCurrentScreen);
-        mNextIndicator.setLevel(mCurrentScreen);
+// dustin remove prev/next indicators
+        //mPreviousIndicator.setLevel(mCurrentScreen);
+        //mNextIndicator.setLevel(mCurrentScreen);
         scrollTo(mCurrentScreen * getWidth(), 0);
         updateWallpaperOffset();
         invalidate();
@@ -450,8 +453,9 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
             postInvalidate();
         } else if (mNextScreen != INVALID_SCREEN) {
             mCurrentScreen = Math.max(0, Math.min(mNextScreen, getChildCount() - 1));
-            mPreviousIndicator.setLevel(mCurrentScreen);
-            mNextIndicator.setLevel(mCurrentScreen);
+// dustin remove prev/next indicators
+            //mPreviousIndicator.setLevel(mCurrentScreen);
+            //mNextIndicator.setLevel(mCurrentScreen);
             Launcher.setScreen(mCurrentScreen);
             mNextScreen = INVALID_SCREEN;
             clearChildrenCache();
@@ -907,7 +911,9 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
             if (mTouchState == TOUCH_STATE_SCROLLING) {
                 final VelocityTracker velocityTracker = mVelocityTracker;
                 velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
-                final int velocityX = (int) velocityTracker.getXVelocity(mActivePointerId);
+		// dustin add velocity multiplier
+		final int vMultiplier = 20;
+                final int velocityX = vMultiplier * (int) velocityTracker.getXVelocity(mActivePointerId);
                 
                 final int screenWidth = getWidth();
                 final int whichScreen = (mScrollX + (screenWidth / 2)) / screenWidth;
@@ -918,13 +924,15 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
                     // Don't fling across more than one screen at a time.
                     final int bound = scrolledPos < whichScreen ?
                             mCurrentScreen - 1 : mCurrentScreen;
-                    snapToScreen(Math.min(whichScreen, bound), velocityX, true);
+		    // dustin don't use 'settle'
+                    snapToScreen(Math.min(whichScreen, bound), velocityX, false);
                 } else if (velocityX < -SNAP_VELOCITY && mCurrentScreen < getChildCount() - 1) {
                     // Fling hard enough to move right
                     // Don't fling across more than one screen at a time.
                     final int bound = scrolledPos > whichScreen ?
                             mCurrentScreen + 1 : mCurrentScreen;
-                    snapToScreen(Math.max(whichScreen, bound), velocityX, true);
+	            // dustin don't use 'settle'
+                    snapToScreen(Math.max(whichScreen, bound), velocityX, false);
                 } else {
                     snapToScreen(whichScreen, 0, true);
                 }
@@ -954,6 +962,7 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
     }
 
     private void snapToScreen(int whichScreen, int velocity, boolean settle) {
+
         //if (!mScroller.isFinished()) return;
 
         whichScreen = Math.max(0, Math.min(whichScreen, getChildCount() - 1));
@@ -963,8 +972,10 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
 
         mNextScreen = whichScreen;
 
-        mPreviousIndicator.setLevel(mNextScreen);
-        mNextIndicator.setLevel(mNextScreen);
+// dustin remove prev/next indicators
+
+        //mPreviousIndicator.setLevel(mNextScreen);
+        //mNextIndicator.setLevel(mNextScreen);
 
         View focusedChild = getFocusedChild();
         if (focusedChild != null && whichScreen != mCurrentScreen &&
@@ -975,7 +986,11 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
         final int screenDelta = Math.max(1, Math.abs(whichScreen - mCurrentScreen));
         final int newX = whichScreen * getWidth();
         final int delta = newX - mScrollX;
-        int duration = (screenDelta + 1) * 100;
+// dustin added duration var to change from 100 in both cases (100 = aosp default)
+// setting this to 0 negates all velocity information including velocity multiplier set up below
+// setting this to 40 is better than 100 but I like it at 0 which basically gets rid of all the animation
+	final int durationMultiplier = 0;
+        int duration = (screenDelta + 1) * durationMultiplier;  
 
         if (!mScroller.isFinished()) {
             mScroller.abortAnimation();
@@ -992,7 +1007,7 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
             duration += (duration / (velocity / BASELINE_FLING_VELOCITY))
                     * FLING_VELOCITY_INFLUENCE;
         } else {
-            duration += 100;
+            duration += durationMultiplier;
         }
 
         awakenScrollBars(duration);
@@ -1483,8 +1498,9 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
     void setIndicators(Drawable previous, Drawable next) {
         mPreviousIndicator = previous;
         mNextIndicator = next;
-        previous.setLevel(mCurrentScreen);
-        next.setLevel(mCurrentScreen);
+// dustin remove prev/next indicators
+        //previous.setLevel(mCurrentScreen);
+        //next.setLevel(mCurrentScreen);
     }
 
     public static class SavedState extends BaseSavedState {

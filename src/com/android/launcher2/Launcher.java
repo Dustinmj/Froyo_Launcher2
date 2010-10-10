@@ -75,6 +75,8 @@ import android.widget.PopupWindow;
 import android.widget.LinearLayout;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
+// dustin import surface
+import android.view.Surface;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -198,14 +200,19 @@ public final class Launcher extends Activity
     private LauncherModel mModel;
     private IconCache mIconCache;
 
+// dustin store screen orientation after wallpaper setting
+    private int orientation;
+
     private ArrayList<ItemInfo> mDesktopItems = new ArrayList<ItemInfo>();
     private static HashMap<Long, FolderInfo> mFolders = new HashMap<Long, FolderInfo>();
 
-    private ImageView mPreviousView;
-    private ImageView mNextView;
+    // dustin remove prev/next buttons
+    //private ImageView mPreviousView;
+    //private ImageView mNextView;
 
     // Hotseats (quick-launch icons next to AllApps)
-    private static final int NUM_HOTSEATS = 2;
+    // dustin add hotseats only to portrait, this gets set in oncreate
+    private int NUM_HOTSEATS = 4;
     private String[] mHotseatConfig = null;
     private Intent[] mHotseats = null;
     private Drawable[] mHotseatIcons = null;
@@ -232,6 +239,9 @@ public final class Launcher extends Activity
         loadHotseats();
         checkForLocaleChange();
         setWallpaperDimension();
+
+	// dustin hotseats only in portrait
+	this.NUM_HOTSEATS = this.isPortrait() ? 4 : 2;
 
         setContentView(R.layout.launcher);
         setupViews();
@@ -356,6 +366,8 @@ public final class Launcher extends Activity
         WallpaperManager wpm = (WallpaperManager)getSystemService(WALLPAPER_SERVICE);
 
         Display display = getWindowManager().getDefaultDisplay();
+        // dustin store screen orientation
+        this.orientation = display.getRotation();
         boolean isPortrait = display.getWidth() < display.getHeight();
 
         final int width = isPortrait ? display.getWidth() : display.getHeight();
@@ -391,7 +403,9 @@ public final class Launcher extends Activity
             }
 
             TypedArray hotseatIconDrawables = getResources().obtainTypedArray(R.array.hotseat_icons);
-            for (int i=0; i<mHotseatConfig.length; i++) {
+	    // dustin if we're in landscape we only want to pull indexes 2 & 3
+	    int x = !this.isPortrait() ? mHotseatConfig.length - 1 : mHotseatConfig.length;
+            for (int i = !this.isPortrait() ? 1 : 0; i<x; i++ ) {
                 // load icon for this slot; currently unrelated to the actual activity
                 try {
                     mHotseatIcons[i] = hotseatIconDrawables.getDrawable(i);
@@ -572,8 +586,9 @@ public final class Launcher extends Activity
     @Override
     protected void onPause() {
         super.onPause();
-        dismissPreview(mPreviousView);
-        dismissPreview(mNextView);
+	// dustin remove prev/next buttons        
+	//dismissPreview(mPreviousView);
+        //dismissPreview(mNextView);
         mDragController.cancelDrag();
     }
 
@@ -639,6 +654,11 @@ public final class Launcher extends Activity
 
     private String getTypedText() {
         return mDefaultKeySsb.toString();
+    }
+
+    // dustin see if we're portrait
+    private boolean isPortrait(){
+	return this.orientation == Surface.ROTATION_0;
     }
 
     private void clearTypedText() {
@@ -707,7 +727,7 @@ public final class Launcher extends Activity
         ((View) mAllAppsGrid).setWillNotDraw(false); // We don't want a hole punched in our window.
         // Manage focusability manually since this thing is always visible
         ((View) mAllAppsGrid).setFocusable(false); 
-
+    
         mWorkspace = (Workspace) dragLayer.findViewById(R.id.workspace);
         final Workspace workspace = mWorkspace;
         workspace.setHapticFeedbackEnabled(false);
@@ -721,12 +741,22 @@ public final class Launcher extends Activity
         mHandleView.setOnLongClickListener(this);
 
         ImageView hotseatLeft = (ImageView) findViewById(R.id.hotseat_left);
-        hotseatLeft.setContentDescription(mHotseatLabels[0]);
-        hotseatLeft.setImageDrawable(mHotseatIcons[0]);
+        hotseatLeft.setContentDescription(mHotseatLabels[1]);
+        hotseatLeft.setImageDrawable(mHotseatIcons[1]);
         ImageView hotseatRight = (ImageView) findViewById(R.id.hotseat_right);
-        hotseatRight.setContentDescription(mHotseatLabels[1]);
-        hotseatRight.setImageDrawable(mHotseatIcons[1]);
-
+        hotseatRight.setContentDescription(mHotseatLabels[2]);
+        hotseatRight.setImageDrawable(mHotseatIcons[2]);
+// dustin add hotseats... only in portrait...
+	if( this.isPortrait() ){
+		ImageView hotseatLeft2 = (ImageView) findViewById(R.id.hotseat_left2);
+		hotseatLeft2.setContentDescription(mHotseatLabels[0]);
+		hotseatLeft2.setImageDrawable(mHotseatIcons[0]);	
+		ImageView hotseatRight2 = (ImageView) findViewById(R.id.hotseat_right2);
+		hotseatRight2.setContentDescription(mHotseatLabels[3]);
+		hotseatRight2.setImageDrawable(mHotseatIcons[3]);
+	}
+// dustin remove prev/next dots
+/*
         mPreviousView = (ImageView) dragLayer.findViewById(R.id.previous_screen);
         mNextView = (ImageView) dragLayer.findViewById(R.id.next_screen);
 
@@ -738,6 +768,7 @@ public final class Launcher extends Activity
         mPreviousView.setOnLongClickListener(this);
         mNextView.setHapticFeedbackEnabled(false);
         mNextView.setOnLongClickListener(this);
+*/
 
         workspace.setOnLongClickListener(this);
         workspace.setDragController(dragController);
@@ -774,12 +805,16 @@ public final class Launcher extends Activity
     @SuppressWarnings({"UnusedDeclaration"})
     public void launchHotSeat(View v) {
         if (isAllAppsVisible()) return;
-
+// dustin add additional hotseat slots
         int index = -1;
         if (v.getId() == R.id.hotseat_left) {
-            index = 0;
-        } else if (v.getId() == R.id.hotseat_right) {
             index = 1;
+        } else if (v.getId() == R.id.hotseat_right) {
+            index = 2;
+        } else if (v.getId() == R.id.hotseat_left2) {
+            index = 0;
+        } else if (v.getId() == R.id.hotseat_right2) {
+            index = 3;
         }
 
         // reload these every tap; you never know when they might change
@@ -1041,8 +1076,9 @@ public final class Launcher extends Activity
 
         getContentResolver().unregisterContentObserver(mWidgetObserver);
         
-        dismissPreview(mPreviousView);
-        dismissPreview(mNextView);
+	// dustin remove prev/next buttons        
+	//dismissPreview(mPreviousView);
+        //dismissPreview(mNextView);
 
         unregisterReceiver(mCloseSystemDialogsReceiver);
     }
@@ -1389,8 +1425,9 @@ public final class Launcher extends Activity
         } else {
             closeFolder();
         }
-        dismissPreview(mPreviousView);
-        dismissPreview(mNextView);
+	// dustin remove prev/next buttons
+        //dismissPreview(mPreviousView);
+        //dismissPreview(mNextView);
     }
 
     private void closeFolder() {
@@ -1539,6 +1576,8 @@ public final class Launcher extends Activity
 
     public boolean onLongClick(View v) {
         switch (v.getId()) {
+            // dustin remove prev/next
+	    /*
             case R.id.previous_screen:
                 if (!isAllAppsVisible()) {
                     mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
@@ -1553,7 +1592,8 @@ public final class Launcher extends Activity
                     showPreviews(v);
                 }
                 return true;
-            case R.id.all_apps_button:
+            */
+	    case R.id.all_apps_button:
                 if (!isAllAppsVisible()) {
                     mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
                             HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
