@@ -591,7 +591,7 @@ public final class Launcher extends Activity
         // launch over to the Music app to actually CREATE_SHORTCUT.
 
         if ( resultCode == RESULT_OK ) {
-            if( data.hasExtra( AppSelector.PACKAGENAME ) ){
+            if( data != null && data.hasExtra( AppSelector.PACKAGENAME ) ){
                   // request code is hotseat index
                   this.setHotseatData( requestCode, 
                         data.getStringExtra( AppSelector.PACKAGENAME ) );
