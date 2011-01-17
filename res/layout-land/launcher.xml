@@ -61,7 +61,6 @@
         android:layout_height="fill_parent"
         android:layout_width="@dimen/button_bar_height_portrait"
         android:layout_gravity="right|center_vertical"
-        android:layout_marginBottom="@dimen/half_status_bar_height"
         >
 
         <com.android.launcher2.HandleView

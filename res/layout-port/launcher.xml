@@ -38,37 +38,7 @@
         <include android:id="@+id/cell5" layout="@layout/workspace_screen" />
                 
     </com.android.launcher2.Workspace>
-<!--
-    <ImageView
-        android:id="@+id/previous_screen"
-        android:layout_width="93dip"
-        android:layout_height="@dimen/button_bar_height"
-        android:layout_gravity="bottom|left"
-        android:layout_marginLeft="6dip"
 
-        android:scaleType="center"
-        android:src="@drawable/home_arrows_left"
-        
-        android:onClick="previousScreen"
-
-        android:focusable="true"
-        android:clickable="true" />
-
-    <ImageView
-        android:id="@+id/next_screen"
-        android:layout_width="93dip"
-        android:layout_height="@dimen/button_bar_height"
-        android:layout_gravity="bottom|right"
-        android:layout_marginRight="6dip"
-
-        android:scaleType="center"
-        android:src="@drawable/home_arrows_right"
-
-        android:onClick="nextScreen"    
-
-        android:focusable="true"
-        android:clickable="true" />
--->
     <com.android.launcher2.DeleteZone
         android:id="@+id/delete_zone"
         android:layout_width="@dimen/delete_zone_size"
@@ -84,10 +54,12 @@
 
     <RelativeLayout
         android:id="@+id/all_apps_button_cluster"
+        android:gravity="center"
         android:layout_width="fill_parent"
         android:layout_height="@dimen/button_bar_height"
         android:layout_gravity="bottom|center_horizontal"
         android:paddingTop="2dip"
+        android:weightSum="5"
         >
 
         <com.android.launcher2.HandleView
@@ -95,7 +67,7 @@
             android:id="@+id/all_apps_button"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
-
+            android:layout_weight="1"
             android:src="@drawable/all_apps_button"
             launcher:direction="horizontal"
             />
@@ -104,7 +76,7 @@
             android:id="@+id/hotseat_left"
             style="@style/HotseatButton"
             android:layout_toLeftOf="@id/all_apps_button"
-
+            android:layout_weight="1"
             android:src="@drawable/hotseat_phone"
 
             android:onClick="launchHotSeat"
@@ -114,6 +86,7 @@
             android:id="@+id/hotseat_left2"
             style="@style/HotseatButton.Left"
             android:layout_toLeftOf="@id/hotseat_left"
+            android:layout_weight="1"
 
             android:src="@drawable/hotseat_talk"
 
@@ -124,6 +97,7 @@
             android:id="@+id/hotseat_right"
             style="@style/HotseatButton"
             android:layout_toRightOf="@id/all_apps_button"
+            android:layout_weight="1"
 
             android:src="@drawable/hotseat_browser"
 
@@ -134,6 +108,7 @@
             android:id="@+id/hotseat_right2"
             style="@style/HotseatButton.Right"
             android:layout_toRightOf="@id/hotseat_right"
+            android:layout_weight="1"
 
             android:src="@drawable/hotseat_email"
 

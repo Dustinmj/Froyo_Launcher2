@@ -147,4 +147,17 @@
     <string name="default_browser_url" translatable="false">
         http://www.google.com/m?client=ms-{CID}&amp;source=android-home-hotseat</string>
 
+    <!-- Context menu for hotseat items -->
+    <string name="hotseat_context_title">Hotseat Options</string>
+    <string name="hotseat_context_select">Choose Application</string>
+    <string name="hotseat_context_default">Default Application</string>
+    <string name="hotseat_context_cancel">Cancel</string>
+
+    <!-- Hotseat app chooser -->
+    <string name="hotseat_selector_title">Hotseat Options</string>
+    <string name="hotseat_selector_init_toast">Choose an app for this hotseat.</string>
+
+    <!-- Application selection activity -->
+    <string name="select_app_working">Loading Applications</string>
+
 </resources>

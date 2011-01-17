@@ -35,6 +35,7 @@ import android.content.Intent.ShortcutIconResource;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;	
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -75,8 +76,17 @@ import android.widget.PopupWindow;
 import android.widget.LinearLayout;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
-// dustin import surface
 import android.view.Surface;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.AlertDialog.Builder;
+import android.graphics.LightingColorFilter;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.ColorMatrix;
+
+
+
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -200,23 +210,21 @@ public final class Launcher extends Activity
     private LauncherModel mModel;
     private IconCache mIconCache;
 
-// dustin store screen orientation after wallpaper setting
     private int orientation;
 
     private ArrayList<ItemInfo> mDesktopItems = new ArrayList<ItemInfo>();
     private static HashMap<Long, FolderInfo> mFolders = new HashMap<Long, FolderInfo>();
 
-    // dustin remove prev/next buttons
-    //private ImageView mPreviousView;
-    //private ImageView mNextView;
 
     // Hotseats (quick-launch icons next to AllApps)
-    // dustin add hotseats only to portrait, this gets set in oncreate
     private int NUM_HOTSEATS = 4;
     private String[] mHotseatConfig = null;
     private Intent[] mHotseats = null;
     private Drawable[] mHotseatIcons = null;
     private CharSequence[] mHotseatLabels = null;
+    private SharedPreferences hotseatPrefs;
+    private final String HOTSEATPREFSSTORE = "HSPREFS";
+    private final String HOTSEATPREFPREFIX = "hsnum";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -240,8 +248,7 @@ public final class Launcher extends Activity
         checkForLocaleChange();
         setWallpaperDimension();
 
-	// dustin hotseats only in portrait
-	this.NUM_HOTSEATS = this.isPortrait() ? 4 : 2;
+	    this.NUM_HOTSEATS = this.isPortrait() ? 4 : 2;
 
         setContentView(R.layout.launcher);
         setupViews();
@@ -385,12 +392,33 @@ public final class Launcher extends Activity
         return Uri.parse(url);
     }
 
+    // load hotseat prefs if not yet initialized, return pointer
+    private SharedPreferences loadHotseatPrefs(){       
+        if( this.hotseatPrefs == null ){        
+            this.hotseatPrefs = this.getSharedPreferences( this.HOTSEATPREFSSTORE, 0 );
+        }
+        return this.hotseatPrefs;
+    }
+
     // Load the Intent templates from arrays.xml to populate the hotseats. For
     // each Intent, if it resolves to a single app, use that as the launch
     // intent & use that app's label as the contentDescription. Otherwise,
     // retain the ResolveActivity so the user can pick an app.
     private void loadHotseats() {
+
+        PackageManager pm = getPackageManager();
+
+        // load hotseat user prefs
+        SharedPreferences sp = this.loadHotseatPrefs();            
+        String[] hotseatApps = new String[ 4 ];
+        for( int i = 0; i < 4; i++ ){
+            hotseatApps[ i ] = sp.getString( HOTSEATPREFPREFIX + i, "" );
+        }
+        // user prefs are now available
+
+        // load up default intents/drawables/labels
         if (mHotseatConfig == null) {
+
             mHotseatConfig = getResources().getStringArray(R.array.hotseats);
             if (mHotseatConfig.length > 0) {
                 mHotseats = new Intent[mHotseatConfig.length];
@@ -403,44 +431,64 @@ public final class Launcher extends Activity
             }
 
             TypedArray hotseatIconDrawables = getResources().obtainTypedArray(R.array.hotseat_icons);
-	    // dustin if we're in landscape we only want to pull indexes 2 & 3
-	    int x = !this.isPortrait() ? mHotseatConfig.length - 1 : mHotseatConfig.length;
+	        // dustin if we're in landscape we only want to pull indexes 2 & 3
+	        int x = !this.isPortrait() ? mHotseatConfig.length - 1 : mHotseatConfig.length;
             for (int i = !this.isPortrait() ? 1 : 0; i<x; i++ ) {
-                // load icon for this slot; currently unrelated to the actual activity
-                try {
-                    mHotseatIcons[i] = hotseatIconDrawables.getDrawable(i);
-                } catch (ArrayIndexOutOfBoundsException ex) {
-                    Log.w(TAG, "Missing hotseat_icons array item #" + i);
-                    mHotseatIcons[i] = null;
+                try{
+                    /**
+                    *   TODO prefs
+                    */
+                    boolean doDesaturate = false;
+                    Drawable icon = pm.getApplicationIcon( hotseatApps[i] ).mutate();
+                    if( doDesaturate ){
+                        ColorMatrix mNoSat = new ColorMatrix();
+                        mNoSat.setSaturation(0);
+                        icon.setColorFilter( new ColorMatrixColorFilter( mNoSat ) );
+                    }                    
+                    mHotseatIcons[i] = icon;
+                }catch( PackageManager.NameNotFoundException e ){
+                    // no preference set, use default icon
+                    // load icon for this slot; currently unrelated to the actual activity
+                    try {
+                        mHotseatIcons[i] = hotseatIconDrawables.getDrawable(i);
+                    } catch (ArrayIndexOutOfBoundsException ex) {
+                        Log.w(TAG, "Missing hotseat_icons array item #" + i);
+                        mHotseatIcons[i] = null;
+                    }
                 }
             }
             hotseatIconDrawables.recycle();
         }
+        // end load up defaults, only icons are now loaded 
 
-        PackageManager pm = getPackageManager();
         for (int i=0; i<mHotseatConfig.length; i++) {
             Intent intent = null;
-            if (mHotseatConfig[i].equals("*BROWSER*")) {
-                // magic value meaning "launch user's default web browser"
-                // replace it with a generic web request so we can see if there is indeed a default
-                String defaultUri = getString(R.string.default_browser_url);
-                intent = new Intent(
-                        Intent.ACTION_VIEW,
-                        ((defaultUri != null)
-                            ? Uri.parse(defaultUri)
-                            : getDefaultBrowserUri())
-                    ).addCategory(Intent.CATEGORY_BROWSABLE);
-                // note: if the user launches this without a default set, she
-                // will always be taken to the default URL above; this is
-                // unavoidable as we must specify a valid URL in order for the
-                // chooser to appear, and once the user selects something, that 
-                // URL is unavoidably sent to the chosen app.
-            } else {
-                try {
-                    intent = Intent.parseUri(mHotseatConfig[i], 0);
-                } catch (java.net.URISyntaxException ex) {
-                    Log.w(TAG, "Invalid hotseat intent: " + mHotseatConfig[i]);
-                    // bogus; leave intent=null
+            // attempt to get launch intent for stored package
+            intent = pm.getLaunchIntentForPackage( hotseatApps[i] );
+            if( intent == null ){
+                if (mHotseatConfig[i].equals("*BROWSER*")) {
+                    // magic value meaning "launch user's default web browser"
+                    // replace it with a generic web request so we can see if there is indeed a default
+                    String defaultUri = getString(R.string.default_browser_url);
+                    intent = new Intent(
+                            Intent.ACTION_VIEW,
+                            ((defaultUri != null)
+                                ? Uri.parse(defaultUri)
+                                : getDefaultBrowserUri())
+                        ).addCategory(Intent.CATEGORY_BROWSABLE);
+                    // note: if the user launches this without a default set, she
+                    // will always be taken to the default URL above; this is
+                    // unavoidable as we must specify a valid URL in order for the
+                    // chooser to appear, and once the user selects something, that 
+                    // URL is unavoidably sent to the chosen app.
+                } else {
+                    // no stored preference, revert to default hotseat
+                    try {
+                        intent = Intent.parseUri(mHotseatConfig[i], 0);
+                    } catch (java.net.URISyntaxException ex) {
+                        Log.w(TAG, "Invalid hotseat intent: " + mHotseatConfig[i]);
+                        // bogus; leave intent=null
+                    }
                 }
             }
             
@@ -522,6 +570,16 @@ public final class Launcher extends Activity
         }
     }
 
+    private void setHotseatData( int index, String data ){
+      SharedPreferences.Editor mEditor = this.loadHotseatPrefs().edit();
+      mEditor.putString( this.HOTSEATPREFPREFIX + index, data );
+      mEditor.commit(); 
+      // force reload of hotseats
+      this.mHotseatConfig = null;
+      this.loadHotseats();
+      this.setupViews();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         mWaitingForResult = false;
@@ -532,32 +590,38 @@ public final class Launcher extends Activity
         // For example, the user would PICK_SHORTCUT for "Music playlist", and we
         // launch over to the Music app to actually CREATE_SHORTCUT.
 
-        if (resultCode == RESULT_OK && mAddItemCellInfo != null) {
-            switch (requestCode) {
-                case REQUEST_PICK_APPLICATION:
-                    completeAddApplication(this, data, mAddItemCellInfo);
-                    break;
-                case REQUEST_PICK_SHORTCUT:
-                    processShortcut(data);
-                    break;
-                case REQUEST_CREATE_SHORTCUT:
-                    completeAddShortcut(data, mAddItemCellInfo);
-                    break;
-                case REQUEST_PICK_LIVE_FOLDER:
-                    addLiveFolder(data);
-                    break;
-                case REQUEST_CREATE_LIVE_FOLDER:
-                    completeAddLiveFolder(data, mAddItemCellInfo);
-                    break;
-                case REQUEST_PICK_APPWIDGET:
-                    addAppWidget(data);
-                    break;
-                case REQUEST_CREATE_APPWIDGET:
-                    completeAddAppWidget(data, mAddItemCellInfo);
-                    break;
-                case REQUEST_PICK_WALLPAPER:
-                    // We just wanted the activity result here so we can clear mWaitingForResult
-                    break;
+        if ( resultCode == RESULT_OK ) {
+            if( data.hasExtra( AppSelector.PACKAGENAME ) ){
+                  // request code is hotseat index
+                  this.setHotseatData( requestCode, 
+                        data.getStringExtra( AppSelector.PACKAGENAME ) );
+            }else if( mAddItemCellInfo != null ){            
+                 switch (requestCode) {
+                    case REQUEST_PICK_APPLICATION:
+                        completeAddApplication(this, data, mAddItemCellInfo);
+                        break;
+                    case REQUEST_PICK_SHORTCUT:
+                        processShortcut(data);
+                        break;
+                    case REQUEST_CREATE_SHORTCUT:
+                        completeAddShortcut(data, mAddItemCellInfo);
+                        break;
+                    case REQUEST_PICK_LIVE_FOLDER:
+                        addLiveFolder(data);
+                        break;
+                    case REQUEST_CREATE_LIVE_FOLDER:
+                        completeAddLiveFolder(data, mAddItemCellInfo);
+                        break;
+                    case REQUEST_PICK_APPWIDGET:
+                        addAppWidget(data);
+                        break;
+                    case REQUEST_CREATE_APPWIDGET:
+                        completeAddAppWidget(data, mAddItemCellInfo);
+                        break;
+                    case REQUEST_PICK_WALLPAPER:
+                        // We just wanted the activity result here so we can clear mWaitingForResult
+                        break;
+                  }
             }
         } else if ((requestCode == REQUEST_PICK_APPWIDGET ||
                 requestCode == REQUEST_CREATE_APPWIDGET) && resultCode == RESULT_CANCELED &&
@@ -599,27 +663,6 @@ public final class Launcher extends Activity
         mAllAppsGrid.surrender();
         return Boolean.TRUE;
     }
-
-    // We can't hide the IME if it was forced open.  So don't bother
-    /*
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-
-        if (hasFocus) {
-            final InputMethodManager inputManager = (InputMethodManager)
-                    getSystemService(Context.INPUT_METHOD_SERVICE);
-            WindowManager.LayoutParams lp = getWindow().getAttributes();
-            inputManager.hideSoftInputFromWindow(lp.token, 0, new android.os.ResultReceiver(new
-                        android.os.Handler()) {
-                        protected void onReceiveResult(int resultCode, Bundle resultData) {
-                            Log.d(TAG, "ResultReceiver got resultCode=" + resultCode);
-                        }
-                    });
-            Log.d(TAG, "called hideSoftInputFromWindow from onWindowFocusChanged");
-        }
-    }
-    */
 
     private boolean acceptFilter() {
         final InputMethodManager inputManager = (InputMethodManager)
@@ -740,35 +783,18 @@ public final class Launcher extends Activity
         mHandleView.setOnClickListener(this);
         mHandleView.setOnLongClickListener(this);
 
-        ImageView hotseatLeft = (ImageView) findViewById(R.id.hotseat_left);
-        hotseatLeft.setContentDescription(mHotseatLabels[1]);
-        hotseatLeft.setImageDrawable(mHotseatIcons[1]);
-        ImageView hotseatRight = (ImageView) findViewById(R.id.hotseat_right);
-        hotseatRight.setContentDescription(mHotseatLabels[2]);
-        hotseatRight.setImageDrawable(mHotseatIcons[2]);
-// dustin add hotseats... only in portrait...
-	if( this.isPortrait() ){
-		ImageView hotseatLeft2 = (ImageView) findViewById(R.id.hotseat_left2);
-		hotseatLeft2.setContentDescription(mHotseatLabels[0]);
-		hotseatLeft2.setImageDrawable(mHotseatIcons[0]);	
-		ImageView hotseatRight2 = (ImageView) findViewById(R.id.hotseat_right2);
-		hotseatRight2.setContentDescription(mHotseatLabels[3]);
-		hotseatRight2.setImageDrawable(mHotseatIcons[3]);
-	}
-// dustin remove prev/next dots
-/*
-        mPreviousView = (ImageView) dragLayer.findViewById(R.id.previous_screen);
-        mNextView = (ImageView) dragLayer.findViewById(R.id.next_screen);
-
-        Drawable previous = mPreviousView.getDrawable();
-        Drawable next = mNextView.getDrawable();
-        mWorkspace.setIndicators(previous, next);
-
-        mPreviousView.setHapticFeedbackEnabled(false);
-        mPreviousView.setOnLongClickListener(this);
-        mNextView.setHapticFeedbackEnabled(false);
-        mNextView.setOnLongClickListener(this);
-*/
+        ImageView[] mHotseats = {
+            (ImageView) findViewById(R.id.hotseat_left2),
+            (ImageView) findViewById(R.id.hotseat_left),
+            (ImageView) findViewById(R.id.hotseat_right),
+            (ImageView) findViewById(R.id.hotseat_right2)
+        };
+        int x = this.isPortrait() ? mHotseats.length : mHotseats.length - 1;
+        for( int i = this.isPortrait() ? 0 : 1; i < x; i++ ){
+            mHotseats[i].setContentDescription(mHotseatLabels[i]);
+            mHotseats[i].setImageDrawable(mHotseatIcons[i]);
+            mHotseats[i].setOnLongClickListener( this );
+        }
 
         workspace.setOnLongClickListener(this);
         workspace.setDragController(dragController);
@@ -805,7 +831,6 @@ public final class Launcher extends Activity
     @SuppressWarnings({"UnusedDeclaration"})
     public void launchHotSeat(View v) {
         if (isAllAppsVisible()) return;
-// dustin add additional hotseat slots
         int index = -1;
         if (v.getId() == R.id.hotseat_left) {
             index = 1;
@@ -1574,31 +1599,54 @@ public final class Launcher extends Activity
         openFolder.onOpen();
     }
 
+    public void launchHotseatOptions( final int hotseatId ){
+        final Launcher _self = Launcher.this;
+        final String[] options = {
+            this.getString( R.string.hotseat_context_select ),
+            this.getString( R.string.hotseat_context_default ),
+            this.getString( R.string.hotseat_context_cancel )
+        };
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
+        b.setTitle( this.getString( R.string.hotseat_context_title ) );
+        b.setItems( options, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                switch( item ){
+                case 0: // select
+                    // launch selection activity
+                    Intent mIntent = new Intent( _self, AppSelector.class );
+                    _self.startActivityForResult( mIntent, hotseatId );
+                    break;
+                case 1: // default
+                    _self.setHotseatData( hotseatId, "" );
+                    break;
+                }
+                dialog.dismiss();
+            }
+        });
+        AlertDialog alert = b.create();
+        b.show();    
+    }
+
     public boolean onLongClick(View v) {
         switch (v.getId()) {
-            // dustin remove prev/next
-	    /*
-            case R.id.previous_screen:
-                if (!isAllAppsVisible()) {
-                    mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
-                            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                    showPreviews(v);
-                }
-                return true;
-            case R.id.next_screen:
-                if (!isAllAppsVisible()) {
-                    mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
-                            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                    showPreviews(v);
-                }
-                return true;
-            */
 	    case R.id.all_apps_button:
                 if (!isAllAppsVisible()) {
                     mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
                             HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                     showPreviews(v);
                 }
+                return true;
+        case R.id.hotseat_left2:
+                this.launchHotseatOptions( 0 );
+                return true;
+        case R.id.hotseat_left:
+                this.launchHotseatOptions( 1 );
+                return true;
+        case R.id.hotseat_right:
+                this.launchHotseatOptions( 2 );
+                return true;
+        case R.id.hotseat_right2:
+                this.launchHotseatOptions( 3 );
                 return true;
         }
 
