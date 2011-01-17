@@ -17,8 +17,20 @@
 
 <resources>
     <string-array name="wallpapers" translatable="false">
-        <item>wallpaper_droid</item>
         <item>wallpaper_binary</item>
+        <item>wallpaper_darkplank</item>
+        <item>wallpaper_droid</item>
+        <item>wallpaper_desert</item>
+        <item>wallpaper_despair</item>
+        <item>wallpaper_elecetric</item>
+        <item>wallpaper_field</item>
+        <item>wallpaper_galaxy</item>
+        <item>wallpaper_lightgrad</item>
+        <item>wallpaper_monumentvalley</item>
+        <item>wallpaper_pcut</item>
+        <item>wallpaper_tree</item>
+        <item>wallpaper_x67</item>
+        <item>wallpaper_zanzibar</item>
         <item>wallpaper_reactive</item>
         <item>wallpaper_nexuss</item>
         <item>wallpaper_street_lights</item>
@@ -28,7 +40,6 @@
         <item>wallpaper_pulse</item>
         <item>wallpaper_stars</item>
         <item>wallpaper_grass_night</item>
-        <item>wallpaper_galaxy</item>
         <item>wallpaper_nexusrain</item>
         <item>wallpaper_nexuspattern</item>
         <item>wallpaper_nexuswallpaper1</item>
