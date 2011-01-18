@@ -74,7 +74,7 @@ public final class AppSelector extends ListActivity{
         final Handler h = new Handler();
 		this.executeThreaded(this, this.getString(R.string.select_app_working),
 		    new ThreadProcessHelper() {
-			    @Override
+		
 			    public void perform() {
                     Intent mainIntent = new Intent( Intent.ACTION_MAIN, null );
                     mainIntent.addCategory( Intent.CATEGORY_LAUNCHER );
@@ -148,12 +148,10 @@ public final class AppSelector extends ListActivity{
             this.apps = apps;
         } 
 
-		@Override
 		public int getCount() {
 			return apps.length;
 		}
 
-		@Override
 		public Object getItem(int position) {
             Object item = null;
 			try{
@@ -165,12 +163,10 @@ public final class AppSelector extends ListActivity{
             return item;
 		}
 
-		@Override
 		public long getItemId(int position) {
 			return position;
 		}
 
-		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			MApp thisApp = (MApp) this.getItem(position);
             if( convertView == null ){			
@@ -220,7 +216,6 @@ public final class AppSelector extends ListActivity{
             this.pM = mPackageManager;
         }
  
-        @Override
         public int compare(ResolveInfo a1, ResolveInfo a2) {
             String a1Name = a1.loadLabel( this.pM ).toString();
             String a2Name = a2.loadLabel( this.pM ).toString();
