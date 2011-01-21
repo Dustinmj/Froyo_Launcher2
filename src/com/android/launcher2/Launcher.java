@@ -781,7 +781,6 @@ public final class Launcher extends Activity
         mDeleteZone = deleteZone;
         SettingsZone settingsZone = (SettingsZone) dragLayer.findViewById(R.id.settings_zone);
         mSettingsZone = settingsZone;
-
         mHandleView = (HandleView) findViewById(R.id.all_apps_button);
         mHandleView.setLauncher(this);
         mHandleView.setOnClickListener(this);
