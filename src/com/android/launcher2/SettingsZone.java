@@ -35,6 +35,8 @@ import android.graphics.drawable.TransitionDrawable;
 import android.util.Log;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProviderInfo;
 
 import com.android.launcher.R;
 
@@ -87,7 +89,7 @@ public class SettingsZone extends ImageView implements DropTarget, DragControlle
 
     public boolean acceptDrop(DragSource source, int x, int y, int xOffset, int yOffset,
             DragView dragView, Object dragInfo) {
-        return isApplicable( dragInfo );
+          return isApplicable( dragInfo );
     }
     
     public Rect estimateDropLocation(DragSource source, int x, int y, int xOffset, int yOffset,
@@ -99,20 +101,26 @@ public class SettingsZone extends ImageView implements DropTarget, DragControlle
             DragView dragView, Object dragInfo) {
 
         ItemInfo item = (ItemInfo) dragInfo;
-
-        Intent dropIntent = null;
+        String mPackageName = "";
 
         if( item instanceof ShortcutInfo ){
             ShortcutInfo mItem = (ShortcutInfo) dragInfo;
-            dropIntent = mItem.intent;            
+            mPackageName = mItem.intent.resolveActivityInfo( this.context.getPackageManager(), 0 ).packageName;            
         }else if( item instanceof ApplicationInfo ){
             ApplicationInfo mItem = (ApplicationInfo) dragInfo;
-            dropIntent = mItem.intent;          
-        }else{
+            mPackageName = mItem.intent.resolveActivityInfo( this.context.getPackageManager(), 0 ).packageName;  
+        }else if( item instanceof LauncherAppWidgetInfo ){
+            LauncherAppWidgetInfo mItem = (LauncherAppWidgetInfo) dragInfo;
+            AppWidgetManager mAppWidgetManager = AppWidgetManager.getInstance( this.context );
+            AppWidgetProviderInfo mInfo = mAppWidgetManager.getAppWidgetInfo( mItem.appWidgetId );
+            mPackageName = mInfo.provider.getPackageName(); 
+        }else{ 
+            dragView.setVisibility( View.INVISIBLE );    
+            source.onDropCompleted((View) this, false);
             return;
         } 
             
-        String mPackageName = dropIntent.resolveActivityInfo( this.context.getPackageManager(), 0 ).packageName;
+
         Intent i = new Intent( Intent.ACTION_VIEW );
         // TODO is there a better way to do this? 
         i.setClassName("com.android.settings", "com.android.settings.InstalledAppDetails"); 
@@ -126,7 +134,8 @@ public class SettingsZone extends ImageView implements DropTarget, DragControlle
     }
 
     private boolean isApplicable( Object dragInfo ){
-        return dragInfo instanceof ShortcutInfo || dragInfo instanceof ApplicationInfo;
+        return dragInfo instanceof ShortcutInfo || dragInfo instanceof ApplicationInfo 
+                || dragInfo instanceof LauncherAppWidgetInfo;
     }
 
     public void onDragEnter(DragSource source, int x, int y, int xOffset, int yOffset,
