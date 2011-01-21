@@ -59,7 +59,6 @@
             android:src="@drawable/delete_zone_selector"
             android:visibility="invisible"
             launcher:direction="horizontal"
-            android:layout_marginRight="15dip"
             />
 
         <com.android.launcher2.SettingsZone
@@ -74,7 +73,6 @@
             android:src="@drawable/settings_zone_selector"
             android:visibility="invisible"
             launcher:direction="horizontal"
-            android:layout_marginLeft="15dip"
             />
     </LinearLayout>
 
