@@ -39,18 +39,44 @@
                 
     </com.android.launcher2.Workspace>
 
-    <com.android.launcher2.DeleteZone
-        android:id="@+id/delete_zone"
-        android:layout_width="@dimen/delete_zone_size"
-        android:layout_height="@dimen/delete_zone_size"
-        android:paddingTop="@dimen/delete_zone_padding"
-        android:layout_gravity="bottom|center_horizontal"
 
-        android:scaleType="center"
-        android:src="@drawable/delete_zone_selector"
-        android:visibility="invisible"
-        launcher:direction="horizontal"
-        />
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
+        android:weightSum="4"
+    >
+        <com.android.launcher2.DeleteZone
+            android:id="@+id/delete_zone"
+            android:layout_width="@dimen/delete_zone_size"
+            android:layout_weight="1"
+            android:layout_height="@dimen/delete_zone_size"
+            android:paddingTop="@dimen/delete_zone_padding"
+            android:layout_gravity="bottom"
+            android:scaleType="center"
+            android:src="@drawable/delete_zone_selector"
+            android:visibility="invisible"
+            launcher:direction="horizontal"
+            android:layout_marginRight="15dip"
+            />
+
+        <com.android.launcher2.SettingsZone
+            android:id="@+id/settings_zone"
+            android:layout_width="@dimen/delete_zone_size"
+            android:layout_weight="1"
+            android:layout_height="@dimen/delete_zone_size"
+            android:paddingTop="@dimen/delete_zone_padding"
+            android:layout_gravity="bottom"
+
+            android:scaleType="center"
+            android:src="@drawable/settings_zone_selector"
+            android:visibility="invisible"
+            launcher:direction="horizontal"
+            android:layout_marginLeft="15dip"
+            />
+    </LinearLayout>
 
     <RelativeLayout
         android:id="@+id/all_apps_button_cluster"

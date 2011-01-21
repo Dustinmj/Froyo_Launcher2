@@ -193,6 +193,7 @@ public final class Launcher extends Activity
     private FolderInfo mFolderInfo;
 
     private DeleteZone mDeleteZone;
+    private SettingsZone mSettingsZone;
     private HandleView mHandleView;
     private AllAppsView mAllAppsGrid;
 
@@ -778,6 +779,8 @@ public final class Launcher extends Activity
 
         DeleteZone deleteZone = (DeleteZone) dragLayer.findViewById(R.id.delete_zone);
         mDeleteZone = deleteZone;
+        SettingsZone settingsZone = (SettingsZone) dragLayer.findViewById(R.id.settings_zone);
+        mSettingsZone = settingsZone;
 
         mHandleView = (HandleView) findViewById(R.id.all_apps_button);
         mHandleView.setLauncher(this);
@@ -804,15 +807,21 @@ public final class Launcher extends Activity
         deleteZone.setLauncher(this);
         deleteZone.setDragController(dragController);
         deleteZone.setHandle(findViewById(R.id.all_apps_button_cluster));
+      
+        settingsZone.setLauncher(this);
+        settingsZone.setDragController(dragController);
+        settingsZone.setHandle(findViewById(R.id.all_apps_button_cluster));
 
         dragController.setDragScoller(workspace);
-        dragController.setDragListener(deleteZone);
+        dragController.addDragListener(deleteZone);
+        dragController.addDragListener(settingsZone);
         dragController.setScrollView(dragLayer);
         dragController.setMoveTarget(workspace);
 
         // The order here is bottom to top.
         dragController.addDropTarget(workspace);
         dragController.addDropTarget(deleteZone);
+        dragController.addDropTarget(settingsZone);
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
