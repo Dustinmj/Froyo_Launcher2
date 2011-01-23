@@ -26,11 +26,39 @@
 
     </string-array>
 
-    <array name="hotseat_icons" translatable="false">
-        <item>@drawable/hotseat_talk</item>
-        <item>@drawable/hotseat_phone</item>
-        <item>@drawable/hotseat_browser</item>
-        <item>@drawable/hotseat_email</item>  
+    <array name="hotseat_icons_gingerbread" translatable="false">
+        <item>@drawable/hotseat_talk_gingerbread</item>
+        <item>@drawable/hotseat_phone_gingerbread</item>
+        <item>@drawable/hotseat_browser_gingerbread</item>
+        <item>@drawable/hotseat_email_gingerbread</item>  
+    </array>
+
+    <array name="hotseat_icons_froyo" translatable="false">
+        <item>@drawable/hotseat_talk_froyo</item>
+        <item>@drawable/hotseat_phone_froyo</item>
+        <item>@drawable/hotseat_browser_froyo</item>
+        <item>@drawable/hotseat_email_froyo</item>  
+    </array>
+
+    <array name="hotseat_backgrounds_gingerbread" translatable="false">
+        <item>@drawable/hotseat_bg_left_gingerbread</item>
+        <item>@drawable/hotseat_bg_center_gingerbread</item>
+        <item>@drawable/hotseat_bg_center_gingerbread</item>  
+        <item>@drawable/hotseat_bg_right_gingerbread</item> 
+    </array>
+
+    <array name="hotseat_backgrounds_froyo" translatable="false">
+        <item>@drawable/hotseat_bg_left_froyo</item>
+        <item>@drawable/hotseat_bg_center_froyo</item>
+        <item>@drawable/hotseat_bg_center_froyo</item>  
+        <item>@drawable/hotseat_bg_right_froyo</item> 
+    </array>
+
+    <array name="hotseat_backgrounds_black" translatable="false">
+        <item>@drawable/hotseat_bg_left_black</item>
+        <item>@drawable/hotseat_bg_center_black</item>
+        <item>@drawable/hotseat_bg_center_black</item>  
+        <item>@drawable/hotseat_bg_right_black</item> 
     </array>
 
 </resources>

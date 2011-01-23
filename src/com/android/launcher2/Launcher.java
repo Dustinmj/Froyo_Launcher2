@@ -83,9 +83,9 @@ import android.app.AlertDialog.Builder;
 import android.graphics.LightingColorFilter;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.ColorMatrix;
-
-
-
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.preference.PreferenceManager;
+import java.lang.Boolean;
 
 
 import java.util.ArrayList;
@@ -102,7 +102,9 @@ import com.android.launcher.R;
  * Default launcher application.
  */
 public final class Launcher extends Activity
-        implements View.OnClickListener, OnLongClickListener, LauncherModel.Callbacks, AllAppsView.Watcher {
+        implements View.OnClickListener, OnLongClickListener, LauncherModel.Callbacks, AllAppsView.Watcher, 
+        SharedPreferences.OnSharedPreferenceChangeListener{
+
     static final String TAG = "Launcher";
     static final boolean LOGD = false;
 
@@ -115,7 +117,8 @@ public final class Launcher extends Activity
     private static final int MENU_GROUP_ADD = 1;
     private static final int MENU_GROUP_WALLPAPER = MENU_GROUP_ADD + 1;
 
-    private static final int MENU_ADD = Menu.FIRST + 1;
+    private static final int MENU_PREFS = Menu.FIRST + 1;
+    private static final int MENU_ADD = MENU_PREFS + 1;
     private static final int MENU_MANAGE_APPS = MENU_ADD + 1;
     private static final int MENU_WALLPAPER_SETTINGS = MENU_MANAGE_APPS + 1;
     private static final int MENU_SEARCH = MENU_WALLPAPER_SETTINGS + 1;
@@ -217,21 +220,30 @@ public final class Launcher extends Activity
     private ArrayList<ItemInfo> mDesktopItems = new ArrayList<ItemInfo>();
     private static HashMap<Long, FolderInfo> mFolders = new HashMap<Long, FolderInfo>();
 
+    private ImageView mPreviousView;
+    private ImageView mNextView;
 
     // Hotseats (quick-launch icons next to AllApps)
     private int NUM_HOTSEATS = 4;
     private String[] mHotseatConfig = null;
     private Intent[] mHotseats = null;
     private Drawable[] mHotseatIcons = null;
+    private Drawable[] mHotseatBackgrounds = null;
     private CharSequence[] mHotseatLabels = null;
     private SharedPreferences hotseatPrefs;
     private final String HOTSEATPREFSSTORE = "HSPREFS";
     private final String HOTSEATPREFPREFIX = "hsnum";
+    private static final int HOTSEATPADDING = 13;
+
+    private boolean preferenceChanged;
+    private PrefUtils prefUtils;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        this.preferenceChanged = false;
+        this.prefUtils = new PrefUtils( this );
         LauncherApplication app = ((LauncherApplication)getApplication());
         mModel = app.setLauncher(this);
         mIconCache = app.getIconCache();
@@ -250,7 +262,7 @@ public final class Launcher extends Activity
         checkForLocaleChange();
         setWallpaperDimension();
 
-	    this.NUM_HOTSEATS = this.isPortrait() ? 4 : 2;
+	    this.NUM_HOTSEATS = this.fourHotseats() ? 4 : 2;
 
         setContentView(R.layout.launcher);
         setupViews();
@@ -426,16 +438,31 @@ public final class Launcher extends Activity
                 mHotseats = new Intent[mHotseatConfig.length];
                 mHotseatLabels = new CharSequence[mHotseatConfig.length];
                 mHotseatIcons = new Drawable[mHotseatConfig.length];
+                mHotseatBackgrounds = new Drawable[mHotseatConfig.length];
             } else {
                 mHotseats = null;
                 mHotseatIcons = null;
+                mHotseatBackgrounds = null;
                 mHotseatLabels = null;
             }
 
-            TypedArray hotseatIconDrawables = getResources().obtainTypedArray(R.array.hotseat_icons);
-	        // dustin if we're in landscape we only want to pull indexes 2 & 3
-	        int x = !this.isPortrait() ? mHotseatConfig.length - 1 : mHotseatConfig.length;
-            for (int i = !this.isPortrait() ? 1 : 0; i<x; i++ ) {
+            // load up preferred icon set
+            String iconPref = this.prefUtils.getPrefString( 
+                                    R.string.hotseatDef_key, R.string.hotseatDef_default );
+            String resourceName = "hotseat_icons_" + iconPref;
+            int iconResources = this.getResources().getIdentifier(
+                                    this.getPackageName() + ":array/" + resourceName, null, null);
+            TypedArray hotseatIconDrawables = getResources().obtainTypedArray( iconResources );
+
+            // load up preferred background set
+            String backgroundPref = this.prefUtils.getPrefString( 
+                                    R.string.hotseatBG_key, R.string.hotseatBG_default );
+            resourceName = "hotseat_backgrounds_" + backgroundPref;
+            iconResources = this.getResources().getIdentifier(
+                                    this.getPackageName() + ":array/" + resourceName, null, null);
+            TypedArray hotseatBackgroundDrawables = getResources().obtainTypedArray( iconResources );
+
+            for (int i = 0; i<mHotseatConfig.length; i++ ) {
                 try{
                     /**
                     *   TODO prefs
@@ -457,6 +484,13 @@ public final class Launcher extends Activity
                         Log.w(TAG, "Missing hotseat_icons array item #" + i);
                         mHotseatIcons[i] = null;
                     }
+                }
+                // load up background drawable
+                try{
+                    mHotseatBackgrounds[i] = hotseatBackgroundDrawables.getDrawable( i );
+                }catch( ArrayIndexOutOfBoundsException e ){
+                    Log.w( TAG, "Missing hotseat backgrounds item #" + i );
+                    mHotseatBackgrounds[i] = null;
                 }
             }
             hotseatIconDrawables.recycle();
@@ -647,14 +681,20 @@ public final class Launcher extends Activity
             mModel.startLoader(this, true);
             mRestoring = false;
         }
+
+        if( this.preferenceChanged ){
+            this.mHotseatConfig = null;
+            this.loadHotseats();
+            this.setupViews();
+            this.preferenceChanged = false;
+        }
+        
+        this.unregisterForPreferenceChanges();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-	// dustin remove prev/next buttons        
-	//dismissPreview(mPreviousView);
-        //dismissPreview(mNextView);
         mDragController.cancelDrag();
     }
 
@@ -701,9 +741,17 @@ public final class Launcher extends Activity
         return mDefaultKeySsb.toString();
     }
 
-    // dustin see if we're portrait
+
+    public boolean fourHotseats(){
+        return this.isPortrait() &&
+            this.prefUtils.getBooleanPrefEquals(
+                R.string.numHotseats_key, 
+                R.string.numHotseats_default,
+                "4" );
+    }
+    
     private boolean isPortrait(){
-	return this.orientation == Surface.ROTATION_0;
+	    return this.orientation == Surface.ROTATION_0;
     }
 
     private void clearTypedText() {
@@ -785,6 +833,8 @@ public final class Launcher extends Activity
         mHandleView.setLauncher(this);
         mHandleView.setOnClickListener(this);
         mHandleView.setOnLongClickListener(this);
+        mHandleView.setBackgroundDrawable( mHotseatBackgrounds[1] );
+        mHandleView.setPadding( HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING );
 
         ImageView[] mHotseats = {
             (ImageView) findViewById(R.id.hotseat_left2),
@@ -792,11 +842,46 @@ public final class Launcher extends Activity
             (ImageView) findViewById(R.id.hotseat_right),
             (ImageView) findViewById(R.id.hotseat_right2)
         };
-        int x = this.isPortrait() ? mHotseats.length : mHotseats.length - 1;
-        for( int i = this.isPortrait() ? 0 : 1; i < x; i++ ){
-            mHotseats[i].setContentDescription(mHotseatLabels[i]);
-            mHotseats[i].setImageDrawable(mHotseatIcons[i]);
-            mHotseats[i].setOnLongClickListener( this );
+
+        for( int i = 0; i < mHotseats.length; i++ ){
+            if( mHotseats[i] != null ){
+                mHotseats[i].setBackgroundDrawable(mHotseatBackgrounds[i]);
+                mHotseats[i].setContentDescription(mHotseatLabels[i]);
+                mHotseats[i].setImageDrawable( mHotseatIcons[i] );
+                mHotseats[i].setOnLongClickListener( this );
+                mHotseats[i].setVisibility( View.VISIBLE );
+                mHotseats[i].setPadding( HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING );   
+            }
+        }
+
+        if( !this.fourHotseats() && this.isPortrait() ){
+            // hide extra hotseats
+            mHotseats[0].setVisibility( View.GONE );
+            mHotseats[3].setVisibility( View.GONE );
+            // change up backgrounds
+            mHotseats[1].setBackgroundDrawable(mHotseatBackgrounds[0]);
+            mHotseats[2].setBackgroundDrawable(mHotseatBackgrounds[3]);
+            mHotseats[1].setPadding( HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING );
+            mHotseats[2].setPadding( HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING, HOTSEATPADDING );  
+        }
+
+
+        mPreviousView = (ImageView) dragLayer.findViewById(R.id.previous_screen);
+        mNextView = (ImageView) dragLayer.findViewById(R.id.next_screen);
+
+        if( !this.fourHotseats() ){
+            mPreviousView.setVisibility( View.VISIBLE );
+            mNextView.setVisibility( View.VISIBLE );
+            Drawable previous = mPreviousView.getDrawable();
+            Drawable next = mNextView.getDrawable();
+            mWorkspace.setIndicators(previous, next);
+            mPreviousView.setHapticFeedbackEnabled(false);
+            mPreviousView.setOnLongClickListener(this);
+            mNextView.setHapticFeedbackEnabled(false);
+            mNextView.setOnLongClickListener(this);
+        }else{
+            mPreviousView.setVisibility( View.GONE );
+            mNextView.setVisibility( View.GONE );
         }
 
         workspace.setOnLongClickListener(this);
@@ -1109,10 +1194,8 @@ public final class Launcher extends Activity
         unbindDesktopItems();
 
         getContentResolver().unregisterContentObserver(mWidgetObserver);
-        
-	// dustin remove prev/next buttons        
-	//dismissPreview(mPreviousView);
-        //dismissPreview(mNextView);
+
+        this.dismissPrevNext();
 
         unregisterReceiver(mCloseSystemDialogsReceiver);
     }
@@ -1152,7 +1235,9 @@ public final class Launcher extends Activity
         }
 
         super.onCreateOptionsMenu(menu);
-
+        menu.add(0, MENU_PREFS, 0, R.string.launcher_menu_prefs_title)
+                .setIcon(android.R.drawable.ic_menu_preferences)
+                .setAlphabeticShortcut('P');
         menu.add(MENU_GROUP_ADD, MENU_ADD, 0, R.string.menu_add)
                 .setIcon(android.R.drawable.ic_menu_add)
                 .setAlphabeticShortcut('A');
@@ -1207,6 +1292,10 @@ public final class Launcher extends Activity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case MENU_PREFS:
+                this.registerForPreferenceChanges();
+                this.startActivity( new Intent( this, LauncherPrefs.class ) );
+                return true;
             case MENU_ADD:
                 addItems();
                 return true;
@@ -1429,6 +1518,24 @@ public final class Launcher extends Activity
         startActivityForResult(chooser, REQUEST_PICK_WALLPAPER);
     }
 
+    /* @Override */
+	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
+        if( LOGD ){
+            Log.d( TAG, "Registered preference change: " + key );
+        }
+        this.preferenceChanged = true;
+	}
+
+    private void registerForPreferenceChanges(){
+         this.prefUtils.getSharedPrefs().
+            registerOnSharedPreferenceChangeListener( this );
+    }
+
+    private void unregisterForPreferenceChanges(){
+         this.prefUtils.getSharedPrefs().
+            unregisterOnSharedPreferenceChangeListener( this );
+    }
+
     /**
      * Registers various content observers. The current implementation registers
      * only a favorites observer to keep track of the favorites applications.
@@ -1437,6 +1544,13 @@ public final class Launcher extends Activity
         ContentResolver resolver = getContentResolver();
         resolver.registerContentObserver(LauncherProvider.CONTENT_APPWIDGET_RESET_URI,
                 true, mWidgetObserver);
+    }
+
+    private void dismissPrevNext(){ 
+        if( !this.fourHotseats() ){
+	        dismissPreview(mPreviousView);
+            dismissPreview(mNextView);
+        }
     }
 
     @Override
@@ -1469,9 +1583,7 @@ public final class Launcher extends Activity
         } else {
             closeFolder();
         }
-	// dustin remove prev/next buttons
-        //dismissPreview(mPreviousView);
-        //dismissPreview(mNextView);
+        this.dismissPrevNext();
     }
 
     private void closeFolder() {
@@ -1647,6 +1759,24 @@ public final class Launcher extends Activity
     }
 
     public boolean onLongClick(View v) {
+        if( !this.fourHotseats() ){
+            switch( v.getId() ){
+                case R.id.previous_screen:
+                    if (!isAllAppsVisible()) {
+                        mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        showPreviews(v);
+                    }
+                    return true;
+                case R.id.next_screen:
+                    if (!isAllAppsVisible()) {
+                        mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                        showPreviews(v);
+                    }
+                    return true;
+                }
+        }
         switch (v.getId()) {
 	    case R.id.all_apps_button:
                 if (!isAllAppsVisible()) {

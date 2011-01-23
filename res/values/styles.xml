@@ -66,7 +66,8 @@
     </style>
 
     <style name="HotseatButton">
-        <item name="android:background">@drawable/hotseat_bg_center</item>
+        <item name="android:adjustViewBounds">false</item>
+        <!-- Note launcher resets padding for hotseats -->
         <item name="android:paddingLeft">12dip</item>
         <item name="android:paddingRight">12dip</item>
         <item name="android:layout_width">60dip</item>
@@ -77,11 +78,9 @@
     </style>
     <style name="HotseatButton.Left">
         <item name="android:layout_marginLeft">4dip</item>
-        <item name="android:background">@drawable/hotseat_bg_left</item>
     </style>
     <style name="HotseatButton.Right">
         <item name="android:layout_marginRight">4dip</item>
-        <item name="android:background">@drawable/hotseat_bg_right</item>
     </style>
 
 </resources>

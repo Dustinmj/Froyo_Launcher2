@@ -301,9 +301,10 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
         if (!mScroller.isFinished()) mScroller.abortAnimation();
         clearVacantCache();
         mCurrentScreen = Math.max(0, Math.min(currentScreen, getChildCount() - 1));
-// dustin remove prev/next indicators
-        //mPreviousIndicator.setLevel(mCurrentScreen);
-        //mNextIndicator.setLevel(mCurrentScreen);
+        if( !mLauncher.fourHotseats() ){
+            mPreviousIndicator.setLevel(mCurrentScreen);
+            mNextIndicator.setLevel(mCurrentScreen);
+        }
         scrollTo(mCurrentScreen * getWidth(), 0);
         updateWallpaperOffset();
         invalidate();
@@ -453,9 +454,10 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
             postInvalidate();
         } else if (mNextScreen != INVALID_SCREEN) {
             mCurrentScreen = Math.max(0, Math.min(mNextScreen, getChildCount() - 1));
-// dustin remove prev/next indicators
-            //mPreviousIndicator.setLevel(mCurrentScreen);
-            //mNextIndicator.setLevel(mCurrentScreen);
+            if( !mLauncher.fourHotseats() ){
+                mPreviousIndicator.setLevel(mCurrentScreen);
+                mNextIndicator.setLevel(mCurrentScreen);
+            }
             Launcher.setScreen(mCurrentScreen);
             mNextScreen = INVALID_SCREEN;
             clearChildrenCache();
@@ -972,11 +974,10 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
 
         mNextScreen = whichScreen;
 
-// dustin remove prev/next indicators
-
-        //mPreviousIndicator.setLevel(mNextScreen);
-        //mNextIndicator.setLevel(mNextScreen);
-
+        if( !mLauncher.fourHotseats() ){
+            mPreviousIndicator.setLevel(mNextScreen);
+            mNextIndicator.setLevel(mNextScreen);
+        }
         View focusedChild = getFocusedChild();
         if (focusedChild != null && whichScreen != mCurrentScreen &&
                 focusedChild == getChildAt(mCurrentScreen)) {
@@ -1498,9 +1499,8 @@ public class Workspace extends ViewGroup implements DropTarget, DragSource, Drag
     void setIndicators(Drawable previous, Drawable next) {
         mPreviousIndicator = previous;
         mNextIndicator = next;
-// dustin remove prev/next indicators
-        //previous.setLevel(mCurrentScreen);
-        //next.setLevel(mCurrentScreen);
+        previous.setLevel(mCurrentScreen);
+        next.setLevel(mCurrentScreen);
     }
 
     public static class SavedState extends BaseSavedState {

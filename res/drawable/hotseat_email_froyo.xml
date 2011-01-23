@@ -15,9 +15,9 @@
 -->
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_pressed="true" android:drawable="@drawable/hotseat_talk_pressed" />
-    <item android:state_focused="true" android:state_window_focused="true" android:drawable="@drawable/hotseat_talk_focused" />
-    <item android:state_focused="true" android:state_window_focused="false" android:drawable="@drawable/hotseat_talk_normal" />
-    <item android:drawable="@drawable/hotseat_talk_normal" />
+    <item android:state_pressed="true" android:drawable="@drawable/hotseat_email_pressed_froyo" />
+    <item android:state_focused="true" android:state_window_focused="true" android:drawable="@drawable/hotseat_email_focused_froyo" />
+    <item android:state_focused="true" android:state_window_focused="false" android:drawable="@drawable/hotseat_email_normal_froyo" />
+    <item android:drawable="@drawable/hotseat_email_normal_froyo" />
 </selector>
 

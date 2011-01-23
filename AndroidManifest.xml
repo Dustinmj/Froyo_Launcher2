@@ -97,6 +97,7 @@
         </activity>
 
         <activity android:name="com.android.launcher2.AppSelector" />
+        <activity android:name="com.android.launcher2.LauncherPrefs" android:launchMode="singleInstance" />
 
         <!-- Intent received used to install shortcuts from other applications -->
         <receiver

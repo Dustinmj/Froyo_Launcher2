@@ -162,4 +162,10 @@
     <!-- Application selection activity -->
     <string name="select_app_working">Loading Applications</string>
 
+    <!-- Launcher Settings Titles/Sections -->
+    <string name="launcher_menu_prefs_title">Launcher Options</string>
+    <string name="launcher_prefs_title">Launcher Preferences</string>
+	<string name="hotseat_section_prefs">Hotseat Preferences</string>
+
+
 </resources>
