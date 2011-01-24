@@ -39,7 +39,7 @@
 
 	<!--Hotseat default icon styles -->
 	<string name="hotseatBG_key">hotseatBG</string>
-	<string name="hotseatBG_title">Hotseat Background Style</string>
+	<string name="hotseatBG_title">Hotseat Background</string>
 	<string name="hotseatBG_summary">The style of the hotseat area background.</string>
 	<string name="hotseatBG_default">gingerbread</string>
 	    <!-- listvals -->
