@@ -47,12 +47,14 @@
 		    <item>Froyo Style</item>
 		    <item>Gingerbread Style</item>
 		    <item>Black</item>
+		    <item>Transparent</item>
 	    </string-array>
 	    <!-- realvals -->
 	    <string-array name="hotseatBG_values">
 		    <item>froyo</item>
 		    <item>gingerbread</item>
 		    <item>black</item>
+		    <item>transparent</item>
 	    </string-array>
 
 </resources>

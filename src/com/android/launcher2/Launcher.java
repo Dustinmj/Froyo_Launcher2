@@ -455,11 +455,15 @@ public final class Launcher extends Activity
             // load up preferred background set
             String backgroundPref = this.prefUtils.getPrefString( 
                                     R.string.hotseatBG_key, R.string.hotseatBG_default );
-            resourceName = "hotseat_backgrounds_" + backgroundPref;
-            iconResources = this.getResources().getIdentifier(
+            // special case for "transparent"
+            boolean isTransparent = backgroundPref.equals("transparent");
+            TypedArray hotseatBackgroundDrawables = null;
+            if( !isTransparent ){
+                resourceName = "hotseat_backgrounds_" + backgroundPref;
+                iconResources = this.getResources().getIdentifier(
                                     this.getPackageName() + ":array/" + resourceName, null, null);
-            TypedArray hotseatBackgroundDrawables = getResources().obtainTypedArray( iconResources );
-
+                hotseatBackgroundDrawables = getResources().obtainTypedArray( iconResources );
+            }
             for (int i = 0; i<mHotseatConfig.length; i++ ) {
                 try{
                     /**
@@ -485,7 +489,11 @@ public final class Launcher extends Activity
                 }
                 // load up background drawable
                 try{
-                    mHotseatBackgrounds[i] = hotseatBackgroundDrawables.getDrawable( i );
+                    if( isTransparent ){
+                        mHotseatBackgrounds[i] = null;
+                    }else{
+                        mHotseatBackgrounds[i] = hotseatBackgroundDrawables.getDrawable( i );
+                    }                
                 }catch( ArrayIndexOutOfBoundsException e ){
                     Log.w( TAG, "Missing hotseat backgrounds item #" + i );
                     mHotseatBackgrounds[i] = null;
