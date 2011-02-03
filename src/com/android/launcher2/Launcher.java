@@ -86,6 +86,7 @@ import android.graphics.ColorMatrix;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
 import java.lang.Boolean;
+import java.lang.ClassCastException;
 
 
 import java.util.ArrayList;
@@ -815,6 +816,14 @@ public final class Launcher extends Activity
      * Finds all the views we need and configure them properly.
      */
     private void setupViews() {
+
+        /** TODO
+        *   Track down the fix for this issue because it's a mind-bender
+        *   >>> Try Catch fixes issues with some widgets causing ClassCastException 
+        */
+
+        try{
+
         DragController dragController = mDragController;
 
         DragLayer dragLayer = (DragLayer) findViewById(R.id.drag_layer);
@@ -912,6 +921,11 @@ public final class Launcher extends Activity
         dragController.addDropTarget(workspace);
         dragController.addDropTarget(deleteZone);
         dragController.addDropTarget(settingsZone);
+
+        }catch( ClassCastException ex ){
+            Toast.makeText(this, "Please press home to reload launcher.", Toast.LENGTH_SHORT).show();
+            this.finish();
+        }
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
