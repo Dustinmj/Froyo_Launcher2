@@ -37,6 +37,8 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
+import android.content.ActivityNotFoundException;
+import android.net.Uri;
 
 import com.android.launcher.R;
 
@@ -120,14 +122,22 @@ public class SettingsZone extends ImageView implements DropTarget, DragControlle
             return;
         } 
             
-
-        Intent i = new Intent( Intent.ACTION_VIEW );
+        // Dustin Jorge
         // TODO is there a better way to do this? 
-        i.setClassName("com.android.settings", "com.android.settings.InstalledAppDetails"); 
-        i.putExtra("pkg", mPackageName); 
-        // start new activity to display the information 
+        // Need backwards compatability because still building on Froyo
+        // TODO Merge into gingerbread and get it over with
+        Intent i = new Intent();        
+        try{    
+            // try for froyo ( action isn't available on froyo )
+            i.setAction( Intent.ACTION_VIEW );
+            i.setClassName("com.android.settings", "com.android.settings.InstalledAppDetails"); 
+            i.putExtra("pkg", mPackageName);     
+        }catch( android.content.ActivityNotFoundException e ){          
+            // attempt to launch for gingerbread
+            i.setAction("android.settings.APPLICATION_DETAILS_SETTINGS");
+            i.setData( Uri.parse("package:" + mPackageName ) ); 
+        }
         context.startActivity(i); 
-    
         dragView.setVisibility( View.INVISIBLE );    
         source.onDropCompleted((View) this, false);
 
