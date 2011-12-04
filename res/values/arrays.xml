@@ -14,7 +14,7 @@
 	<item>intent:#Intent;action=android.intent.action.MAIN;component=com.android.contacts/.ContactsLaunchActivity;end</item>
 
 	<!-- ******* BROWSER LAUNCHER, right, index 2 ****** -->
-        <item>*BROWSER*</item>
+    <item>*BROWSER*</item>
 
 	<!-- ******* EMAIL LAUNCHER ******, far right, index 3 -->
 	<!-- Droid x motoblur (Blur Messaging Home) -->        
